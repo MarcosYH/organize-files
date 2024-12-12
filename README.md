@@ -28,6 +28,7 @@ organize-files
 ```
 
 This will automatically sort your files into these categories:
+
 - 🖼️ Images
 - 📄 Documents
 - 🎥 Videos
@@ -49,6 +50,7 @@ This will move all files back to their original locations.
 ## 📋 How It Works
 
 1. When you run `organize-files`, the script:
+
    - Scans the current directory
    - Creates category folders if they don't exist
    - Moves files into appropriate category folders
@@ -62,21 +64,27 @@ This will move all files back to their original locations.
 ## 🔍 Supported File Types
 
 ### Images
+
 `.png`, `.jpeg`, `.jpg`, `.svg`, `.gif`, `.bmp`, `.webp`, `.tiff`, `.raw`, `.heic`
 
 ### Documents
+
 `.docx`, `.pdf`, `.txt`, `.doc`, `.rtf`, `.odt`, `.xlsx`, `.csv`, `.pptx`, `.md`
 
 ### Videos
+
 `.mp4`, `.mkv`, `.avi`, `.mov`, `.wmv`, `.flv`, `.webm`, `.m4v`, `.mpeg`, `.mpg`
 
 ### Compressed
+
 `.zip`, `.rar`, `.7z`, `.tar`, `.gz`, `.bz2`, `.xz`, `.tgz`
 
 ### Executables
+
 `.exe`, `.msi`, `.bat`, `.sh`, `.cmd`, `.app`, `.bin`
 
 ### Torrents
+
 `.torrent`
 
 ## ⚠️ Notes
@@ -91,7 +99,9 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## 📄 License
 
-[Your License Here]
+MIT License
+
+Copyright (c) 2024 Marcos.yh
 
 ## 🐛 Issues
 
