@@ -1,0 +1,15 @@
+{
+  "name": "organizer-files-cli",
+  "version": "1.0.0",
+  "description": "CLI pour organiser et restaurer des fichiers.",
+  "main": "organizer.js",
+  "bin": {
+    "organize": "./organizer.js",
+    "restore": "./restorer.js"
+  },
+  "scripts": {
+    "organize": "node organizer.js",
+    "restore": "node restorer.js"
+  },
+  "dependencies": {}
+}
