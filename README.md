@@ -1,5 +1,7 @@
 # File Organizer CLI
 
+![Cover Image](./cover/cover.png)
+
 A simple, cross-platform command-line tool to automatically organize files in your current directory by type and easily restore them.
 
 ## 🚀 Features
