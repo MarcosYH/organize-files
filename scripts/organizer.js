@@ -38,10 +38,7 @@ function ensureDirectoryExists(directoryPath) {
       fs.mkdirSync(directoryPath, { recursive: true });
     }
   } catch (error) {
-    console.error(
-      `Erreur lors de la création du dossier ${directoryPath}:`,
-      error
-    );
+    console.error(`Folder creation error ${directoryPath}:`, error);
     throw error;
   }
 }
@@ -127,6 +124,39 @@ function moveFile(fullPath, file, sourceDirectory, fileTypes, journal) {
     }
   }
   return false;
+}
+
+function writeOrganizationLog(sourceDirectory, newJournal) {
+  const logPath = path.join(sourceDirectory, "organization_log.json");
+
+  try {
+    let existingJournal = {};
+    if (fs.existsSync(logPath)) {
+      try {
+        existingJournal = JSON.parse(fs.readFileSync(logPath, "utf8"));
+      } catch (parseError) {
+        console.error("Error reading old log :", parseError);
+      }
+    }
+
+    const mergedJournal = {
+      ...existingJournal,
+      ...newJournal,
+    };
+
+    if (fs.existsSync(logPath)) {
+      fs.unlinkSync(logPath);
+    }
+
+    fs.writeFileSync(logPath, JSON.stringify(mergedJournal, null, 4), "utf8");
+    hideFile(logPath);
+
+    console.log(`Updated log`);
+    return mergedJournal;
+  } catch (error) {
+    console.error(`Error while writing log : ${error}`);
+    return newJournal;
+  }
 }
 
 function organizeFiles() {
@@ -222,15 +252,13 @@ function organizeFiles() {
           newName: path.basename(otherDirectory),
         };
       } catch (error) {
-        console.error(`Impossible de déplacer ${file} : ${error}`);
+        console.error(`Impossible to move ${file} : ${error}`);
       }
     }
   });
 
   if (Object.keys(journal).length > 0) {
-    const logPath = path.join(sourceDirectory, "organization_log.json");
-    fs.writeFileSync(logPath, JSON.stringify(journal, null, 4), "utf8");
-    hideFile(logPath);
+    writeOrganizationLog(sourceDirectory, journal);
   }
 
   console.log(`Total of ${Object.keys(journal).length} files organized.`);
