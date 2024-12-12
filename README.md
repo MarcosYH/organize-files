@@ -1,6 +1,6 @@
 # File Organizer CLI
 
-![Cover Image](./cover/cover.png)
+![Cover Image](https://res.cloudinary.com/dbx3mcmdp/image/upload/f_auto,q_auto/uijrj7eiknafaxobv77u)
 
 A simple, cross-platform command-line tool to automatically organize files in your current directory by type and easily restore them.
 
