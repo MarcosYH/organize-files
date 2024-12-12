@@ -3,6 +3,13 @@
   "version": "1.2.0",
   "description": "CLI pour organiser et restaurer des fichiers.",
   "main": "organizer.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MarcosYH/organize-files"
+  },
+  "bugs": {
+    "url": "https://github.com/MarcosYH/organize-files/issues"
+  },
   "bin": {
     "organize-files": "scripts/organizer.js",
     "restore-files": "scripts/restore.js"
