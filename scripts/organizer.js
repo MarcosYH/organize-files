@@ -32,13 +32,63 @@ function hideFile(filePath) {
   }
 }
 
-function createDirectories(basePath, categories) {
-  Object.keys(categories).forEach((directory) => {
-    const directoryPath = path.join(basePath, directory);
+function ensureDirectoryExists(directoryPath) {
+  try {
     if (!fs.existsSync(directoryPath)) {
       fs.mkdirSync(directoryPath, { recursive: true });
     }
+  } catch (error) {
+    console.error(
+      `Erreur lors de la création du dossier ${directoryPath}:`,
+      error
+    );
+    throw error;
+  }
+}
+
+function createDirectoriesForExistingFileTypes(
+  basePath,
+  fileTypes,
+  sourceFiles
+) {
+  const directoriesToCreate = {};
+
+  Object.entries(fileTypes).forEach(([fileType, extensions]) => {
+    const hasMatchingFiles = sourceFiles.some((file) =>
+      extensions.includes(path.extname(file).toLowerCase())
+    );
+
+    if (hasMatchingFiles || fileType === "others") {
+      directoriesToCreate[fileType] = true;
+    }
   });
+
+  Object.keys(directoriesToCreate).forEach((directory) => {
+    const directoryPath = path.join(basePath, directory);
+    ensureDirectoryExists(directoryPath);
+  });
+}
+
+function generateUniqueFileName(destinationPath) {
+  if (!fs.existsSync(destinationPath)) {
+    return destinationPath;
+  }
+
+  const ext = path.extname(destinationPath);
+  const base = path.basename(destinationPath, ext);
+  let counter = 1;
+
+  while (true) {
+    const newPath = path.join(
+      path.dirname(destinationPath),
+      `${base}(${counter})${ext}`
+    );
+
+    if (!fs.existsSync(newPath)) {
+      return newPath;
+    }
+    counter++;
+  }
 }
 
 function moveFile(fullPath, file, sourceDirectory, fileTypes, journal) {
@@ -47,10 +97,28 @@ function moveFile(fullPath, file, sourceDirectory, fileTypes, journal) {
   for (const [fileType, extensions] of Object.entries(fileTypes)) {
     if (extensions.includes(extension)) {
       const destination = path.join(sourceDirectory, fileType, file);
+
       try {
-        fs.renameSync(fullPath, destination);
-        console.log(`Moved ${file} to ${fileType}`);
-        journal[file] = { type: fileType, origin: fullPath };
+        const uniqueDestination = generateUniqueFileName(destination);
+
+        fs.renameSync(fullPath, uniqueDestination);
+
+        if (uniqueDestination !== destination) {
+          console.log(
+            `Moved ${file} to ${fileType} as ${path.basename(
+              uniqueDestination
+            )}`
+          );
+          journal[file] = {
+            type: fileType,
+            origin: fullPath,
+            newName: path.basename(uniqueDestination),
+          };
+        } else {
+          console.log(`Moved ${file} to ${fileType}`);
+          journal[file] = { type: fileType, origin: fullPath };
+        }
+
         return true;
       } catch (e) {
         console.error(`Error moving ${file}: ${e}`);
@@ -87,6 +155,7 @@ function organizeFiles() {
       ".csv",
       ".pptx",
       ".md",
+      ".json",
     ],
     videos: [
       ".mp4",
@@ -107,44 +176,57 @@ function organizeFiles() {
   };
 
   const journal = {};
-  createDirectories(sourceDirectory, fileTypes);
 
   const files = fs.readdirSync(sourceDirectory);
-  const filesToOrganize = [];
-
-  // Filtrer les fichiers à organiser
-  const organizableFiles = files.filter((file) => {
+  const filesToOrganize = files.filter((file) => {
     const fullPath = path.join(sourceDirectory, file);
     const isDirectory = fs.statSync(fullPath).isDirectory();
 
     return !(
       isDirectory ||
       file === "file_organizer.js" ||
-      file === "organization_log.json"
+      file === "organization_log.json" ||
+      Object.keys(fileTypes).some((category) =>
+        fullPath.startsWith(path.join(sourceDirectory, category))
+      )
     );
   });
 
-  // Si aucun fichier à organiser, créer un fichier humoristique et quitter
-  if (organizableFiles.length === 0) {
-    fs.writeFileSync("open.txt", "What were you expecting?", "utf8");
-    console.log("No files to organize. Humorous message added.");
+  createDirectoriesForExistingFileTypes(
+    sourceDirectory,
+    fileTypes,
+    filesToOrganize
+  );
+
+  if (filesToOrganize.length === 0) {
+    console.log("No new files to organize.");
     return;
   }
 
-  // Organiser les fichiers
-  organizableFiles.forEach((file) => {
+  filesToOrganize.forEach((file) => {
     const fullPath = path.join(sourceDirectory, file);
 
     if (!moveFile(fullPath, file, sourceDirectory, fileTypes, journal)) {
-      const otherDirectory = path.join(sourceDirectory, "others", file);
-      fs.renameSync(fullPath, otherDirectory);
-      console.log(`Moved ${file} to 'others'`);
-      journal[file] = { type: "others", origin: fullPath };
-      filesToOrganize.push(file);
+      const otherDirectoryPath = path.join(sourceDirectory, "others");
+      ensureDirectoryExists(otherDirectoryPath);
+
+      const otherDirectory = generateUniqueFileName(
+        path.join(otherDirectoryPath, file)
+      );
+      try {
+        fs.renameSync(fullPath, otherDirectory);
+        console.log(`Moved ${file} to 'others'`);
+        journal[file] = {
+          type: "others",
+          origin: fullPath,
+          newName: path.basename(otherDirectory),
+        };
+      } catch (error) {
+        console.error(`Impossible de déplacer ${file} : ${error}`);
+      }
     }
   });
 
-  // Ne créer le journal que s'il y a des fichiers à enregistrer
   if (Object.keys(journal).length > 0) {
     const logPath = path.join(sourceDirectory, "organization_log.json");
     fs.writeFileSync(logPath, JSON.stringify(journal, null, 4), "utf8");
