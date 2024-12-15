@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -19,9 +18,21 @@ function showFile(filePath) {
       case "linux":
         const fileName = path.basename(filePath);
         const directory = path.dirname(filePath);
-        const newPath = path.join(directory, fileName.replace(/^\./, ""));
-        fs.renameSync(filePath, newPath);
-        console.log("File made visible on macOS/Linux");
+
+        if (fileName.startsWith(".")) {
+          const newFileName = fileName.replace(/^\./, "");
+          const newPath = path.join(directory, newFileName);
+
+          let finalPath = newPath;
+          let counter = 1;
+          while (fs.existsSync(finalPath)) {
+            finalPath = path.join(directory, `${newFileName}(${counter})`);
+            counter++;
+          }
+
+          fs.renameSync(filePath, finalPath);
+          console.log(`File made visible: ${finalPath}`);
+        }
         break;
 
       default:
@@ -46,7 +57,6 @@ function restoreFiles() {
   ];
 
   const logFiles = ["organization_log.json", ".organization_log.json"];
-
   let logPath = null;
   for (const file of logFiles) {
     const potentialPath = path.join(sourceDirectory, file);
@@ -63,7 +73,13 @@ function restoreFiles() {
 
   showFile(logPath);
 
-  const log = JSON.parse(fs.readFileSync(logPath, "utf8"));
+  let log;
+  try {
+    log = JSON.parse(fs.readFileSync(logPath, "utf8"));
+  } catch (error) {
+    console.error("Error reading log file:", error);
+    return;
+  }
 
   let restoredFiles = 0;
 
@@ -77,12 +93,19 @@ function restoreFiles() {
     files.forEach((file) => {
       const filePath = path.join(directoryPath, file);
 
-      if (log[file]) {
-        let destination = path.join(sourceDirectory, file);
+      const logEntry = Object.entries(log).find(
+        ([key, value]) =>
+          value.newName === file ||
+          (value.type === directory && path.basename(value.origin) === file)
+      );
+
+      if (logEntry) {
+        const [originalFileName, fileInfo] = logEntry;
+        let destination = path.join(sourceDirectory, originalFileName);
 
         let counter = 1;
-        const extension = path.extname(file);
-        const base = path.basename(file, extension);
+        const extension = path.extname(originalFileName);
+        const base = path.basename(originalFileName, extension);
 
         while (fs.existsSync(destination)) {
           const newName = `${base}(${counter})${extension}`;
@@ -105,11 +128,6 @@ function restoreFiles() {
     ) {
       fs.rmdirSync(directoryPath);
     }
-  }
-
-  const textFile = path.join(sourceDirectory, "open.txt");
-  if (fs.existsSync(textFile)) {
-    fs.unlinkSync(textFile);
   }
 
   fs.unlinkSync(logPath);
